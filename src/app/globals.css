@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Surfaces */
+  --color-bg: #ffffff;
+  --color-surface: #f7f7fa;
+  --color-surface-2: #f0f0f5;
+  --color-surface-3: #e9e9f0;
+  --color-line: #e6e6ee;
+  --color-line-strong: #d4d4df;
+
+  /* Ink */
+  --color-ink: #12121a;
+  --color-ink-2: #3f3f4f;
+  --color-ink-muted: #6e6e80;
+  --color-ink-subtle: #9c9cae;
+
+  /* Brand (purple) */
+  --color-brand-50: #f4f1ff;
+  --color-brand-100: #e9e3ff;
+  --color-brand-200: #d4c8ff;
+  --color-brand-300: #b5a0ff;
+  --color-brand-400: #9370ff;
+  --color-brand-500: #7a4dff;
+  --color-brand-600: #6a3aef;
+  --color-brand-700: #5a2dd1;
+  --color-brand-800: #4a26a8;
+  --color-brand-900: #3c2184;
+
+  /* Semantic */
+  --color-success: #19a463;
+  --color-success-soft: #e6f7ee;
+  --color-warning: #e39a1b;
+  --color-warning-soft: #fdf3e0;
+  --color-danger: #e5484d;
+  --color-danger-soft: #fdeaeb;
+
+  /* Radii */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+
+  /* Shadows: soft and low-contrast */
+  --shadow-soft: 0 1px 2px rgba(18, 18, 26, 0.04), 0 4px 16px rgba(18, 18, 26, 0.05);
+  --shadow-lift: 0 2px 4px rgba(18, 18, 26, 0.05), 0 12px 32px rgba(18, 18, 26, 0.08);
+  --shadow-brand: 0 8px 24px rgba(122, 77, 255, 0.28);
+
+  /* Type scale */
+  --text-display: 2.75rem;
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.03em;
+  --text-h1: 2rem;
+  --text-h1--line-height: 1.15;
+  --text-h1--letter-spacing: -0.025em;
+  --text-h2: 1.5rem;
+  --text-h2--line-height: 1.25;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h3: 1.125rem;
+  --text-h3--line-height: 1.35;
+  --text-h3--letter-spacing: -0.01em;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.65;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.5;
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1.4;
+  --text-micro--letter-spacing: 0.04em;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-fade-up: fade-up 0.5s var(--ease-out-soft) both;
+  --animate-fade-in: fade-in 0.35s ease-out both;
+  --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes pulse-soft {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.55;
+    }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    font-feature-settings: "cv11", "ss01", "ss03";
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-bg text-ink text-body antialiased;
+  }
+  ::selection {
+    background: var(--color-brand-100);
+    color: var(--color-brand-900);
+  }
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@utility card-soft {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+}
+
+@utility card-raised {
+  background: var(--color-bg);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+}
+
+@utility inline-field {
+  @apply w-full rounded-md bg-transparent px-2 py-1.5 text-ink transition-colors outline-none;
+  border: 1px solid transparent;
+  &:hover {
+    background: var(--color-surface-2);
+  }
+  &:focus {
+    background: var(--color-bg);
+    border-color: var(--color-brand-300);
+    box-shadow: 0 0 0 3px var(--color-brand-100);
+  }
+  &::placeholder {
+    color: var(--color-ink-subtle);
+  }
+}
+
+@utility eyebrow {
+  @apply text-micro font-semibold uppercase tracking-wider text-ink-subtle;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+}
