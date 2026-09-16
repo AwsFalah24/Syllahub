@@ -9,6 +9,8 @@ import { fromDueAt, nowInTz } from "@/lib/dates";
 import { PageHeader } from "@/components/shell/page-header";
 import { Button } from "@/components/ui/button";
 import { CalendarView, type CalEvent, type CalMeeting } from "@/components/calendar/calendar-view";
+import { getScheduleBlocks } from '@/lib/schedule-data';
+import { BLOCK_LABELS } from '@/lib/schedule';
 
 export const metadata: Metadata = { title: "Calendar" };
 
@@ -22,6 +24,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
   const date = typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : today;
 
   const [courses, assignments] = await Promise.all([getActiveCourses(profile.id), getAssignmentsWithCourses(profile.id)]);
+  const saved = await getScheduleBlocks(profile.id);
   const meetings = await getMeetingsForCourses(
     profile.id,
     courses.map((c) => c.id),
@@ -47,6 +50,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
     });
 
   const courseById = new Map(courses.map((c) => [c.id, c]));
+  events.push(...saved.blocks.map(b => ({ id: b.id, title: b.title, type: b.kind === 'quiz' ? 'quiz' as const : 'other' as const, date: b.date, time: b.start_time, endTime: b.end_time, completed: false, weight_percent: null, estimated_hours: null, courseId: '', courseCode: BLOCK_LABELS[b.kind], color: b.kind === 'study' ? 'violet' : 'teal' })));
   const calMeetings: CalMeeting[] = meetings.map((m) => {
     const c = courseById.get(m.course_id)!;
     return {
@@ -59,6 +63,8 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
       end_time: m.end_time.slice(0, 5),
       kind: m.kind,
       location: m.location,
+      term_start: c.term_start,
+      term_end: c.term_end,
     };
   });
 

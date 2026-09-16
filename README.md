@@ -88,6 +88,14 @@ Each course has weighted components (Midterm 25%, Homework 20%, …). Within a c
 
 `whatDoINeed(target)` = `(target × totalWeight − pointsBanked) / remainingWeight`. The hero shows it as a single animated number and a bar, with best/worst-case finals alongside.
 
+## Personal schedule and AI planning
+
+Run `supabase/migrations/0002_schedule_blocks.sql` in the Supabase SQL editor once before using custom blocks. The table is protected by per-user RLS. Plan supports creating, editing and deleting dated work, volunteering, study, quiz and personal blocks; saved blocks also appear in Calendar. Class meetings respect course term dates in both views.
+
+Opening Plan does not generate a timetable. Select **Plan with AI**, provide priorities, a starting date and a daily study budget, then request a suggestion. The server uses `OPENAI_API_KEY` and `OPENAI_MODEL`, checks conflicts with saved blocks/classes, and returns an unsaved draft. Review, remove unwanted blocks, revise preferences, and explicitly accept to save. Blocks use the profile timezone’s wall-clock dates and times, and currently cover single dates rather than repeating events.
+
+Run schedule validation tests with `node --experimental-strip-types --test src/lib/schedule.test.ts`.
+
 ## Scripts
 
 ```bash

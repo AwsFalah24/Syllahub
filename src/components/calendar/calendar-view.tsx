@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   addDays,
   addMonths,
@@ -39,6 +39,7 @@ export interface CalEvent {
   courseId: string;
   courseCode: string;
   color: string;
+  endTime?: string;
 }
 
 export interface CalMeeting {
@@ -51,6 +52,8 @@ export interface CalMeeting {
   end_time: string;
   kind: MeetingKind;
   location: string | null;
+  term_start: string | null;
+  term_end: string | null;
 }
 
 export function CalendarView({
@@ -67,6 +70,7 @@ export function CalendarView({
   today: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [view, setView] = useState<"month" | "week">(initialView);
   const [cursor, setCursor] = useState(() => parseISO(initialDate));
   const todayDate = useMemo(() => parseISO(today), [today]);
@@ -94,11 +98,11 @@ export function CalendarView({
 
   function go(next: Date) {
     setCursor(next);
-    router.replace(`/calendar?view=${view}&date=${format(next, "yyyy-MM-dd")}`, { scroll: false });
+    router.replace(`${pathname}?view=${view}&date=${format(next, "yyyy-MM-dd")}`, { scroll: false });
   }
   function switchView(v: "month" | "week") {
     setView(v);
-    router.replace(`/calendar?view=${v}&date=${format(cursor, "yyyy-MM-dd")}`, { scroll: false });
+    router.replace(`${pathname}?view=${v}&date=${format(cursor, "yyyy-MM-dd")}`, { scroll: false });
   }
 
   const title =
@@ -143,7 +147,7 @@ export function CalendarView({
       </div>
 
       {view === "month" ? (
-        <MonthGrid cursor={cursor} byDate={byDate} weekLoad={weekLoad} onPickDay={(d) => { setView("week"); go(d); }} />
+        <MonthGrid cursor={cursor} byDate={byDate} meetings={meetings} weekLoad={weekLoad} onPickDay={(d) => { setView("week"); setCursor(d); router.replace(`${pathname}?view=week&date=${format(d, "yyyy-MM-dd")}`, { scroll: false }); }} />
       ) : (
         <WeekView cursor={cursor} byDate={byDate} meetings={meetings} />
       )}
@@ -156,11 +160,13 @@ export function CalendarView({
 function MonthGrid({
   cursor,
   byDate,
+  meetings,
   weekLoad,
   onPickDay,
 }: {
   cursor: Date;
   byDate: Map<string, CalEvent[]>;
+  meetings: CalMeeting[];
   weekLoad: Map<string, number>;
   onPickDay: (d: Date) => void;
 }) {
@@ -192,7 +198,7 @@ function MonthGrid({
               </div>
               {week.map((day) => {
                 const key = format(day, "yyyy-MM-dd");
-                const items = byDate.get(key) ?? [];
+                const items = [...(byDate.get(key) ?? []), ...meetings.filter(m => meetingOn(m, day)).map(m => ({ id: `meeting-${m.id}`, title: `${m.courseCode} ${MEETING_KIND_LABELS[m.kind]}`, time: m.start_time, endTime: m.end_time, color: m.color, completed: false }))].sort((a,b) => (a.time ?? '99').localeCompare(b.time ?? '99'));
                 const inMonth = isSameMonth(day, cursor);
                 return (
                   <button
@@ -213,24 +219,19 @@ function MonthGrid({
                       {format(day, "d")}
                     </span>
                     <div className="mt-1 flex flex-col gap-0.5">
-                      {items.slice(0, 3).map((e) => {
+                      {items.map((e) => {
                         const c = courseColor(e.color);
                         return (
                           <span
                             key={e.id}
-                            className={cn("hidden truncate rounded-md px-1.5 py-px text-micro font-medium sm:block", e.completed && "line-through opacity-50")}
+                            title={`${e.title} ${e.time ?? ''}${e.endTime ? `–${e.endTime}` : ''}`}
+                            className={cn("block break-words rounded-md px-1 py-1 text-micro font-medium", e.completed && "line-through opacity-50")}
                             style={{ backgroundColor: c.soft, color: c.text }}
                           >
-                            {e.title}
+                            {e.time && <span className="block tabular">{formatTimeStr(e.time)}{e.endTime ? `–${formatTimeStr(e.endTime)}` : ''}</span>}{e.title}
                           </span>
                         );
                       })}
-                      <span className="flex gap-0.5 sm:hidden">
-                        {items.slice(0, 4).map((e) => (
-                          <span key={e.id} className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: courseColor(e.color).hex }} />
-                        ))}
-                      </span>
-                      {items.length > 3 ? <span className="hidden px-1 text-micro text-ink-subtle sm:block">+{items.length - 3} more</span> : null}
                     </div>
                   </button>
                 );
@@ -252,7 +253,7 @@ function WeekView({ cursor, byDate, meetings }: { cursor: Date; byDate: Map<stri
       {days.map((day) => {
         const key = format(day, "yyyy-MM-dd");
         const items = byDate.get(key) ?? [];
-        const dayMeetings = meetings.filter((m) => m.day_of_week === day.getDay()).sort((a, b) => a.start_time.localeCompare(b.start_time));
+        const dayMeetings = meetings.filter((m) => meetingOn(m, day)).sort((a, b) => a.start_time.localeCompare(b.start_time));
         const today = isToday(day);
         return (
           <section key={key} className={cn("rounded-2xl p-3", today ? "bg-brand-50/70" : "bg-surface")}>
@@ -279,7 +280,7 @@ function WeekView({ cursor, byDate, meetings }: { cursor: Date; byDate: Map<stri
                 return (
                   <Link
                     key={e.id}
-                    href={`/courses/${e.courseId}`}
+                    href={e.courseId ? `/courses/${e.courseId}` : '/plan'}
                     className={cn("block rounded-lg px-2 py-1.5 text-caption transition hover:brightness-95", e.completed && "opacity-50")}
                     style={{ backgroundColor: c.soft }}
                   >
@@ -289,6 +290,7 @@ function WeekView({ cursor, byDate, meetings }: { cursor: Date; byDate: Map<stri
                     <div className="mt-0.5 text-micro text-ink-muted">
                       {e.courseCode}
                       {e.time ? ` · ${formatTimeStr(e.time)}` : ""}
+                      {e.endTime ? `–${formatTimeStr(e.endTime)}` : ''}
                       {e.type === "exam" || e.type === "quiz" ? ` · ${e.type}` : ""}
                     </div>
                   </Link>
@@ -305,4 +307,9 @@ function WeekView({ cursor, byDate, meetings }: { cursor: Date; byDate: Map<stri
 
 export function isSameDayStr(a: string, b: Date) {
   return isSameDay(parseISO(a), b);
+}
+
+function meetingOn(m: CalMeeting, day: Date) {
+  const date = format(day, 'yyyy-MM-dd');
+  return m.day_of_week === day.getDay() && (!m.term_start || date >= m.term_start) && (!m.term_end || date <= m.term_end);
 }
